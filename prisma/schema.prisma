@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model topic_count {
+  id    String @id @default(cuid())
+  topic String @unique
+  count Int
+}
+
+model account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              user    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId], map: "Account_provider_providerAccountId_key")
+  @@index([userId], map: "Account_userId_idx")
+}
+
+model game {
+  id          String        @id @default(cuid())
+  userId      String
+  timeStarted DateTime
+  topic       String
+  timeEnded   DateTime?
+  gameType    game_gameType
+  user        user          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions   question[]
+
+  @@index([userId], map: "Game_userId_idx")
+}
+
+model question {
+  id                String                @id @default(cuid())
+  question          String
+  answer            String
+  gameId            String
+  options           Json?
+  percentageCorrect Float?
+  isCorrect         Boolean?
+  questionType      question_questionType
+  userAnswer        String?
+  game              game                  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId], map: "Question_gameId_idx")
+}
+
+model session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique(map: "Session_sessionToken_key")
+  userId       String
+  expires      DateTime
+  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "Session_userId_idx")
+}
+
+model user {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique(map: "User_email_key")
+  emailVerified DateTime?
+  image         String?
+  accounts      account[]
+  sessions      session[]
+  games         game[]
+}
+
+enum game_gameType {
+  mcq
+  open_ended
+}
+
+enum question_questionType {
+  mcq
+  open_ended
+}
